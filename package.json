@@ -1,0 +1,13 @@
+{
+  "name": "viltrum-bot",
+  "version": "1.0.0",
+  "description": "Viltrumite Discord Bot in Node.js",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/generativeai": "^0.21.0",
+    "discord.js": "^14.14.1"
+  }
+}
