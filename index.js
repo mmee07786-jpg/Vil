@@ -4,6 +4,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+if (!DISCORD_TOKEN || !GEMINI_API_KEY) {
+    console.error("❌ | لازم تضيف DISCORD_TOKEN و GEMINI_API_KEY بمتغيرات البيئة.");
+    process.exit(1);
+}
+
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const MODELS_FALLBACK = [
@@ -24,7 +29,8 @@ const client = new Client({
 });
 
 const userMemory = new Map();
-const MEMORY_TIMEOUT = 3600 * 1000; // بالمللي ثانية (ساعة واحدة)
+const MEMORY_TIMEOUT = 3600 * 1000; // ساعة واحدة
+const MAX_HISTORY = 20;             // آخر 20 رسالة فقط (عشان الذاكرة ما تكبر)
 
 client.once('ready', () => {
     console.log(`🚀 | بوت إمبراطورية فالتروم شغال وبأفضل هيبة: ${client.user.tag}`);
@@ -64,6 +70,9 @@ client.on('messageCreate', async message => {
             await message.reply("أمرك، أنا هنا لخدمة إمبراطورية فالتروم. ما طلبك؟");
             return;
         }
+
+        // يظهر "يكتب..." أثناء التفكير
+        message.channel.sendTyping().catch(() => {});
 
         const userId = message.author.id;
         const currentTime = Date.now();
@@ -128,6 +137,11 @@ client.on('messageCreate', async message => {
                     memoryObj.history.push({ role: 'user', parts: [{ text: currentInput }] });
                     memoryObj.history.push({ role: 'model', parts: [{ text: replyText }] });
 
+                    // نحتفظ بآخر MAX_HISTORY رسالة فقط (عدد زوجي، فيبدأ دائماً برسالة المستخدم)
+                    if (memoryObj.history.length > MAX_HISTORY) {
+                        memoryObj.history = memoryObj.history.slice(-MAX_HISTORY);
+                    }
+
                     success = true;
                     break;
                 }
@@ -137,15 +151,23 @@ client.on('messageCreate', async message => {
             }
         }
 
-        if (success && replyText) {
-            if (replyText.length > 2000) {
-                replyText = replyText.substring(0, 1997) + "...";
+        try {
+            if (success && replyText) {
+                if (replyText.length > 2000) {
+                    replyText = replyText.substring(0, 1997) + "...";
+                }
+                await message.reply(replyText);
+            } else {
+                await message.reply("حدث ضغط طفيف، أنا في خدمتك مرة أخرى فوراً.");
             }
-            await message.reply(replyText);
-        } else {
-            await message.reply("حدث ضغط طفيف، أنا في خدمتك مرة أخرى فوراً.");
+        } catch (e) {
+            console.log(`⚠️ فشل إرسال الرد: ${e.message}`);
         }
     }
+});
+
+process.on('unhandledRejection', error => {
+    console.error('⚠️ خطأ غير معالج:', error);
 });
 
 client.login(DISCORD_TOKEN);
