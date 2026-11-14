@@ -1,3 +1,4 @@
+
 {
   "name": "viltrum-bot",
   "version": "1.0.0",
@@ -6,8 +7,11 @@
   "scripts": {
     "start": "node index.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "@google/generativeai": "^0.21.0",
+    "@google/generative-ai": "^0.21.0",
     "discord.js": "^14.14.1"
   }
 }
